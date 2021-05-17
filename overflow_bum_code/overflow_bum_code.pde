@@ -2,6 +2,7 @@ ArrayList<Particle> particles = new ArrayList<Particle>(); // particles followin
 Path[] paths = new Path[0]; // paths to be followed by particles
 Boundary metro_boundary = new Boundary(); // POLYGON BOUNDARY
 Boundary[] metro_boundary_inside = new Boundary[0]; // POLYGON BOUNDARIES INSIDE
+Boundary[] metro_boundary_pilons = new Boundary[0]; // POLYGON BOUNDARIES INSIDE PILONS
 
 
 // sliders and canvas object
@@ -12,6 +13,7 @@ PImage img, img_wlines;
 JSONObject boundaries_json;
 JSONObject paths_json;
 JSONObject inside_boundaries_json;
+JSONObject inside_boundaries_pilons_json;
 
 // Helpers From Keyboard or Buttons
 boolean draw_boundary = true;
@@ -23,21 +25,25 @@ boolean draw_metro_lines = true;
 int maxNumOfParticles = 400;
 int text_size_helper = 14;
 int text_size_time = 36;
+PFont custom_font_title;
+PFont custom_font_subtitle;
+
 
 // Load JSON objects by reading the files
 void preload() {
     img_wlines = loadImage("assets/overlays/overlay_sine.png");
     img = loadImage("assets/overlays/overlay_titlu_gri1.png");
-    boundaries_json = loadJSONObject("assets/data_from_rhino_bum/boundary_catacombs.json");
-    inside_boundaries_json = loadJSONObject("assets/data_from_rhino_bum/boundary_inside_catacombs.json");
-    paths_json = loadJSONObject("assets/data_from_rhino_bum/paths.json");
+    boundaries_json = loadJSONObject("assets/data_from_rhino_bum/rotated/boundary_catacombs.json");
+    inside_boundaries_json = loadJSONObject("assets/data_from_rhino_bum/rotated/boundary_inside_catacombs.json");
+    inside_boundaries_pilons_json = loadJSONObject("assets/data_from_rhino_bum/rotated/boundary_inside_pilons.json");
+    paths_json = loadJSONObject("assets/data_from_rhino_bum/rotated/paths.json");
 }
 
 // Convert saved point data (JSON) into p5 polygon Objects
 void loadData() {
     int scale_offset = 150;
-    float original_size_x = 2311.76;
-    float original_size_y = 1570.776;
+    float original_size_x =2427.075;  //2311.76; 
+    float original_size_y =1344.240; //1570.776;
     float ratio_boundary = original_size_x/original_size_y;
     
     float scaled_y = height - scale_offset;
@@ -53,6 +59,7 @@ void loadData() {
     Boundary new_boundary;
     float mapped_correct_size_y;
     float mapped_correct_size_x;
+   
 
     // Load Polygon Boundaries
     for (int i = 0; i < boundariesData.size(); i++) {
@@ -79,6 +86,20 @@ void loadData() {
             new_boundary.addPoint(mapped_correct_size_x, mapped_correct_size_y);
         }
         metro_boundary_inside = (Boundary[]) append(metro_boundary_inside, new_boundary);
+    }
+    
+    // Load Inside Pilons Boundaries
+    for (int i = 1; i <= inside_boundaries_pilons_json.size(); i++) {
+        new_boundary = new Boundary();
+        paths_vertices = inside_boundaries_pilons_json.getJSONArray(str(i));
+        for (int j = 0; j < paths_vertices.size(); j++) {
+            point = paths_vertices.getJSONObject(j);
+            mapped_correct_size_y = map(point.getFloat("Y"), 0, original_size_y,  0, scaled_y) + height/2 - mid_y ;
+            mapped_correct_size_x = map(point.getFloat("X"), 0, original_size_x, 0, scaled_x) + width/2 - mid_x;
+            
+            new_boundary.addPoint(mapped_correct_size_x, mapped_correct_size_y);
+        }
+        metro_boundary_pilons = (Boundary[]) append(metro_boundary_pilons, new_boundary);
     }
     
     // Load Paths that the particles are going to f_ollow
@@ -118,18 +139,24 @@ void setup() {
     print("Made with love in Delft/Bucharest by @andrejcarlo and @alxmuller");
     print("VERSION BUM_01");
     
-    size(1600, 1000);
-    //fullScreen();
+    //size(1600, 1000);
+    fullScreen();
     
     // ------ Slider Setup
-    congestionSlider = new Slider(0, maxNumOfParticles, 0, 5, width - 250, 25, 230, 20);
-    cohesionSlider = new Slider(0, 1, 0, 0.1, width - 250, 70, 230, 20);
-    separationSlider = new Slider(0, 1.1, 0, 0.05, width - 250, 115, 230, 20);
-    speedSlider = new Slider(0.1, 2, 1, 0.1, width - 250, 160, 230, 20);
+    congestionSlider = new Slider(0, maxNumOfParticles, 0, 5, width - 250, 25, 230, 20, "Congestion", width-425, 45);
+    cohesionSlider = new Slider(0, 1, 0, 0.1, width - 250, 70, 230, 20, "Cohesion", width-425, 90);
+    separationSlider = new Slider(0, 1.1, 0, 0.05, width - 250, 115, 230, 20, "Separation", width-425, 135);
+    speedSlider = new Slider(0.1, 2, 1, 0.1, width - 250, 160, 230, 20, "Speed", width-425, 180);
+    
+    //String[] fontList = PFont.list();
+    //printArray(fontList);
+  
+    custom_font_title = createFont("Roboto Slab Bold", 70);
+    custom_font_subtitle = createFont("Roboto Slab Bold", 40);
     
     image(img_wlines, 0, 0, width, height);
     background(0, 0, 0);
-
+    
 }
 
 // Animate Function
@@ -137,7 +164,7 @@ void draw() {
     // Enable Helpers if needed
     if (second_viz == true) {
         //background(0, 0, 0);
-        fill(0, 0, 0, 15);
+        fill(0, 0, 0, 10);
         noStroke();
     } else {
         background(0);
@@ -158,6 +185,7 @@ void draw() {
       }
     }
     
+    // Draw Sliders
     congestionSlider.display();
     cohesionSlider.display();
     separationSlider.display();
@@ -176,10 +204,20 @@ void draw() {
         particles.add(car);
     }
 
+    boolean inside_sec = false;
+    boolean inside_main = false;
+
     //--- Path Following Particles
     for (int i = 0; i < particles.size(); i++) {
         // Collision detection
-        boolean inside = particles.get(i).boundaries();
+        inside_main = particles.get(i).boundaries(metro_boundary, false);
+        
+        for (Boundary bd: metro_boundary_pilons) {
+          particles.get(i).collide_inside_bd(bd);
+          inside_sec = particles.get(i).boundaries(bd,true);
+           if(inside_sec) break;
+        }
+
 
         // Apply Behaviours of Particles
         boolean eliminate = particles.get(i).applyBehaviors(particles);
@@ -187,9 +225,12 @@ void draw() {
         // display
         particles.get(i).update();
         particles.get(i).show();
-
-        // Respawn
-        elimination(inside, eliminate, i);
+        
+        // Despawn and respawn particles
+        if (eliminate || inside_sec || inside_main) {
+           particles.remove(i);
+        }  
+        
     }
     // Draw overlay after particles
     //if (draw_metro_lines)
@@ -197,21 +238,15 @@ void draw() {
     //else
     //    image(img, 0, 0, width, height);
 
-    //Draw Helpers and clock after image
-    if (helper == true) {
-        textSize(text_size_helper);
-        strokeWeight(0);
-        fill(100);
-        int distance_between = 14;
-        text("move congestion slider to start", 40, height - 20 - distance_between * 5);
-        text("b to hide metro plan", 40, height - 20 - distance_between * 4);
-        text("r to reset particles", 40, height - 20 - distance_between * 3);
-        text("v to change visualization", 40, height - 20 - distance_between * 2);
-        text("i to hide metro lines", 40, height - 20 - distance_between);
-        text("space to hide these instructions", 40, height - 20);
-
-
-    }
+    
+    // Draw Title and Subtitle
+    strokeWeight(0);
+    fill(100);
+    textFont(custom_font_title);
+    text("Overflow", 20, height-100);
+    
+    textFont(custom_font_subtitle);
+    text("The city and its places", 20, height-50);
     
 
 }
@@ -246,16 +281,3 @@ void keyPressed() {
         speedSlider.decrease_slider();
     }
 }
-
-// Despawn and respawn particles
-void elimination(boolean inside, boolean eliminate, int index) {
-    if (inside || eliminate) {
-        particles.remove(index);
-    }
-}
-
-// also change here dimensions for resizing window
-// whenever you resize, the canvas changes dimensions according to these values
-// function windowResized() {
-//     resizeCanvas(sketchHeight, sketchWidth);
-// }

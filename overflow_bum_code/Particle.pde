@@ -9,9 +9,10 @@ class Particle {
     boolean[] infectionState;
     boolean infected;
     int stuck;
-    color c;
+    color c[] = {color(150,52,132), color(45,102,190), color(96,175,255), color(40,194,255),color(42,245,255)};
     Path pathToFollow;
-  
+    color color_assigned = c[int(random(c.length))];
+    float pilonSize;
   
     Particle (float x, float y) {
         position = new PVector(x, y);
@@ -22,15 +23,15 @@ class Particle {
         maxForceCohesion = 4;
         maxSpeed = 4;
         size = 10;
-        // 1/2 probability that particle starts infected
         stuck = 0;
+        pilonSize = 20;
 
-        int r = int(random(255)); // r is a random number between 0 - 255
-        int g = int(random(100, 200)); // g is a random number betwen 100 - 200
-        int b = int(random(100)); // b is a random number between 0 - 100
-        int a = 255; // a is a random number between 200 - 255
+        //int r = int(random(255)); // r is a random number between 0 - 255
+        //int g = int(random(100, 200)); // g is a random number betwen 100 - 200
+        //int b = int(random(100)); // b is a random number between 0 - 100
+        //int a = 255; // a is a random number between 200 - 255
 
-        c = color(r, g, b, a);
+        
     }
     
     // Despawn Particles once they reach the end of a path
@@ -54,7 +55,31 @@ class Particle {
             
         }
     }
-    
+    // Align Behaviour
+    PVector align(ArrayList<Particle> particles) {
+        int perceptionRadius = 50;
+        PVector steering = new PVector();
+        int total = 0;
+        for (Particle other : particles ) {
+            float d = dist(
+                position.x,
+                position.y,
+                other.position.x,
+                other.position.y
+            );
+            if (other != this && d < perceptionRadius) {
+                steering.add(other.velocity);
+                total++;
+            }
+        }
+        if (total > 0) {
+            steering.div(total);
+            steering.setMag(maxSpeed);
+            steering.sub(velocity);
+            steering.limit(maxForce);
+        }
+        return steering;
+    }
     // Separation and Cohesion Behaviour
     ArrayList<PVector> separation_cohesion(ArrayList<Particle> particles) {
         int perceptionRadius = 50;
@@ -92,24 +117,62 @@ class Particle {
         result.add(steering_separation);
         result.add(steering_cohesion);
         return result;
+        
+    }
+    
+    // Collision Detection with Structural Pilons
+    void collide_inside_bd(Boundary metro_bd) {
+        int spring = 1;
+        float minDist = pilonSize / 2 + size / 2;
+        boolean redirected = false;
+        boolean inside_check;
+        float dx,dy, distance = 0;
+        
+        for (PVector pilon: metro_bd.points) {
+            // console.log(others[i]);
+              dx = pilon.x - position.x;
+              dy = pilon.y - position.y;
+              distance = sqrt(dx * dx + dy * dy);
+              //   console.log(distance);
+              //console.log(minDist);
+              if (distance < minDist) {
+                  //console.log("2");
+                  float angle = atan2(dy, dx);
+                  float targetX = position.x + cos(angle) * minDist;
+                  float targetY = position.y + sin(angle) * minDist;
+                  float ax = (targetX - pilon.x) * spring;
+                  float ay = (targetY - pilon.y) * spring;
+  
+                  velocity.x -= ax;
+                  velocity.y -= ay;
+              }
+        }
     }
 
+
     // Collision Detection with the metro walls
-    boolean boundaries() {
+    boolean boundaries(Boundary metro_bd, boolean inside) {
         // boundary hits
-        ArrayList hit_wall_detect = collideCirclePoly(position.x, position.y, size, metro_boundary.points, false);
-        ArrayList outside_wall_detect = collideCirclePoly(position.x, position.y, size, metro_boundary.points, true);
+        ArrayList hit_wall_detect = collideCirclePoly(position.x, position.y, size, metro_bd.points, false);
+        ArrayList outside_wall_detect = collideCirclePoly(position.x, position.y, size, metro_bd.points, true);
 
         int spring = 1;
+        float minDist = size / 2;
+        boolean redirected = false;
+        boolean inside_check;
         
-        if (hit_wall_detect.size() >= 3 && (boolean) outside_wall_detect.get(0)) {
+        if (inside) inside_check = false;
+        else inside_check = (boolean) outside_wall_detect.get(0);
+        
+        float dx,dy, distance = 0;
+        
+        if (hit_wall_detect.size() >= 3 && inside_check) {
             if ((float) hit_wall_detect.get(1) > 0 && (float) hit_wall_detect.get(2) > 0) {
             
               // console.log(others[i]);
-              float dx = (float) hit_wall_detect.get(1) - position.x;
-              float dy = (float) hit_wall_detect.get(2) - position.y;
-              float distance = sqrt(dx * dx + dy * dy);
-              float minDist = size / 2;
+              dx = (float) hit_wall_detect.get(1) - position.x;
+              dy = (float) hit_wall_detect.get(2) - position.y;
+              distance = sqrt(dx * dx + dy * dy);
               //   console.log(distance);
               //console.log(minDist);
               if (distance < minDist) {
@@ -123,15 +186,24 @@ class Particle {
                   velocity.x -= ax;
                   velocity.y -= ay;
                   //lastPosition = position
+                  redirected = true;
               }
               stuck = 0;
             }
         }
-        if (!(boolean) outside_wall_detect.get(0)) {
+        if (inside) {
+          if ((boolean) outside_wall_detect.get(0)){ 
+            print("Ejected"); 
             return true;
+          }       
+          
+        } else {
+          if (!(boolean) outside_wall_detect.get(0)) return true;
         }
+        
         return false;
     }
+    
     // This function implements Craig Reynolds' path following algorithm
     // http://www.red3d.com/cwr/steer/PathFollow.html
     PVector follow(Path path) {
@@ -264,7 +336,7 @@ class Particle {
     }
     // Draw the particle on screen
     void show() {
-        fill(c);
+        fill(color_assigned);
         noStroke();
         circle(position.x, position.y, 3);
     }

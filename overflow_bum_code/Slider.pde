@@ -10,6 +10,10 @@ class Slider {
     float width_slider, height_slider;
     color c = color(random(180, 330), random(30, 100), 100);
     
+    float x_text, y_text;
+    float text_size = 25;
+    String text_str;
+    
     Slider () {
       minimum = 0;
       maximum = minimum + 1;
@@ -18,7 +22,7 @@ class Slider {
       step = 0.1;
     }
     
-    Slider(float min, float max, float default_val, float stp, int pos_x_start, float pos_y_start, float in_width_slider, float in_height_slider) {
+    Slider(float min, float max, float default_val, float stp, int pos_x_start, float pos_y_start, float in_width_slider, float in_height_slider,String txt,  float pos_x_text, float pos_y_text) {
       minimum = min;
       maximum = max;
       default_value = default_val;
@@ -30,6 +34,10 @@ class Slider {
       y_start = pos_y_start;
       width_slider = in_width_slider;
       height_slider = in_height_slider;
+      
+      text_str = txt;
+      x_text = pos_x_text;
+      y_text = pos_y_text;
       
     }
     
@@ -46,6 +54,11 @@ class Slider {
     }
     
     void display() {
+      textSize(text_size);
+      strokeWeight(0);
+      fill(100);
+      text(text_str, x_text,y_text);
+      
       strokeWeight(4);
       noFill();
       stroke(50);
@@ -57,6 +70,8 @@ class Slider {
       //fill(191, 161, 130);
       fill(c);
       rect(x_start ,y_start, display_value,height_slider);
+      
+      
       
     }
 }
