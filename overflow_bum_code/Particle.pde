@@ -24,7 +24,7 @@ class Particle {
         maxSpeed = 4;
         size = 10;
         stuck = 0;
-        pilonSize = 20;
+        //pilonSize = 20;
 
         //int r = int(random(255)); // r is a random number between 0 - 255
         //int g = int(random(100, 200)); // g is a random number betwen 100 - 200
@@ -121,11 +121,9 @@ class Particle {
     }
     
     // Collision Detection with Structural Pilons
-    void collide_inside_bd(Boundary metro_bd) {
+    void collide_inside_bd(Boundary metro_bd, float pilonSize) {
         int spring = 1;
         float minDist = pilonSize / 2 + size / 2;
-        boolean redirected = false;
-        boolean inside_check;
         float dx,dy, distance = 0;
         
         for (PVector pilon: metro_bd.points) {
@@ -151,7 +149,7 @@ class Particle {
 
 
     // Collision Detection with the metro walls
-    boolean boundaries(Boundary metro_bd, boolean inside) {
+    boolean boundaries (Boundary metro_bd, boolean inside) {
         // boundary hits
         ArrayList hit_wall_detect = collideCirclePoly(position.x, position.y, size, metro_bd.points, false);
         ArrayList outside_wall_detect = collideCirclePoly(position.x, position.y, size, metro_bd.points, true);

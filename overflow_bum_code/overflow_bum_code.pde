@@ -1,6 +1,7 @@
 ArrayList<Particle> particles = new ArrayList<Particle>(); // particles following paths
 Path[] paths = new Path[0]; // paths to be followed by particles
 Boundary metro_boundary = new Boundary(); // POLYGON BOUNDARY
+Boundary metro_boundary_collide = new Boundary();
 Boundary[] metro_boundary_inside = new Boundary[0]; // POLYGON BOUNDARIES INSIDE
 Boundary[] metro_boundary_pilons = new Boundary[0]; // POLYGON BOUNDARIES INSIDE PILONS
 
@@ -11,6 +12,7 @@ Slider congestionSlider, cohesionSlider, separationSlider, speedSlider;;
 // preload json variables
 PImage img, img_wlines;
 JSONObject boundaries_json;
+JSONObject boundaries_collide_json;
 JSONObject paths_json;
 JSONObject inside_boundaries_json;
 JSONObject inside_boundaries_pilons_json;
@@ -28,12 +30,12 @@ int text_size_time = 36;
 PFont custom_font_title;
 PFont custom_font_subtitle;
 
-
 // Load JSON objects by reading the files
 void preload() {
     img_wlines = loadImage("assets/overlays/overlay_sine.png");
     img = loadImage("assets/overlays/overlay_titlu_gri1.png");
     boundaries_json = loadJSONObject("assets/data_from_rhino_bum/rotated/boundary_catacombs.json");
+    boundaries_collide_json = loadJSONObject("assets/data_from_rhino_bum/rotated/boundary_catacombs_lowpoly.json");
     inside_boundaries_json = loadJSONObject("assets/data_from_rhino_bum/rotated/boundary_inside_catacombs.json");
     inside_boundaries_pilons_json = loadJSONObject("assets/data_from_rhino_bum/rotated/boundary_inside_pilons.json");
     paths_json = loadJSONObject("assets/data_from_rhino_bum/rotated/paths.json");
@@ -52,6 +54,7 @@ void loadData() {
     float mid_x = scaled_x/2;
     float mid_y = scaled_y/2;
     JSONArray boundariesData = boundaries_json.getJSONArray("0");
+    JSONArray boundariesDataCollision = boundaries_collide_json.getJSONArray("0");
     
     JSONObject point;
     JSONArray paths_vertices;
@@ -61,7 +64,7 @@ void loadData() {
     float mapped_correct_size_x;
    
 
-    // Load Polygon Boundaries
+    // Load Polygon DIsplay Boundaries
     for (int i = 0; i < boundariesData.size(); i++) {
         // Get each object in the array
         point = boundariesData.getJSONObject(i);
@@ -71,6 +74,19 @@ void loadData() {
          
         //balls = (Ball[]) append(balls, b);
         metro_boundary.addPoint(mapped_correct_size_x, mapped_correct_size_y);
+
+    }
+    
+    // Load Polygon Collision Boundaries
+    for (int i = 0; i < boundariesDataCollision.size(); i++) {
+        // Get each object in the array
+        point = boundariesDataCollision.getJSONObject(i);
+        // Get x,y from position
+        mapped_correct_size_y = map(point.getFloat("Y"), 0, original_size_y,  0, scaled_y) + height/2 - mid_y ;
+        mapped_correct_size_x = map(point.getFloat("X"), 0, original_size_x, 0, scaled_x) + width/2 - mid_x;
+         
+        //balls = (Ball[]) append(balls, b);
+        metro_boundary_collide.addPoint(mapped_correct_size_x, mapped_correct_size_y);
 
     }
     
@@ -140,7 +156,7 @@ void setup() {
     print("VERSION BUM_01");
     
     //size(1600, 1000);
-    fullScreen();
+    fullScreen(P3D);
     
     // ------ Slider Setup
     congestionSlider = new Slider(0, maxNumOfParticles, 0, 5, width - 250, 25, 230, 20, "Congestion", width-425, 45);
@@ -151,8 +167,8 @@ void setup() {
     //String[] fontList = PFont.list();
     //printArray(fontList);
   
-    custom_font_title = createFont("Roboto Slab Bold", 70);
-    custom_font_subtitle = createFont("Roboto Slab Bold", 40);
+    custom_font_title = createFont("Futura PT Bold", 70);
+    custom_font_subtitle = createFont("Futura PT Bold", 40);
     
     image(img_wlines, 0, 0, width, height);
     background(0, 0, 0);
@@ -194,13 +210,12 @@ void draw() {
 
     // --------- Generate Particles
 
-    //start a car at a random path then eliminate it when it has reached the end of the path
-    Path path = paths[int(random(paths.length))];
-    Particle car = new Particle(path.getStart().x, path.getStart().y);
-    car.pathToFollow = path;
-
     // Build particles until desired length
     if (particles.size() <= congestionSlider.current_value && congestionSlider.current_value != 0) {
+        //start a car at a random path then eliminate it when it has reached the end of the path
+        Path path = paths[int(random(paths.length))];
+        Particle car = new Particle(path.getStart().x, path.getStart().y);
+        car.pathToFollow = path;
         particles.add(car);
     }
 
@@ -210,12 +225,13 @@ void draw() {
     //--- Path Following Particles
     for (int i = 0; i < particles.size(); i++) {
         // Collision detection
-        inside_main = particles.get(i).boundaries(metro_boundary, false);
+        //inside_main = particles.get(i).boundaries(metro_boundary, false);
+        particles.get(i).collide_inside_bd(metro_boundary_collide, 35);
         
         for (Boundary bd: metro_boundary_pilons) {
-          particles.get(i).collide_inside_bd(bd);
-          inside_sec = particles.get(i).boundaries(bd,true);
-           if(inside_sec) break;
+          particles.get(i).collide_inside_bd(bd, 20);
+          //inside_sec = particles.get(i).boundaries(bd,true);
+          // if(inside_sec) break;
         }
 
 
@@ -248,6 +264,14 @@ void draw() {
     textFont(custom_font_subtitle);
     text("The city and its places", 20, height-50);
     
+    
+    textFont(custom_font_title,36);
+    // white float frameRate
+    fill(255);
+    text(frameRate,20,20);
+    // gray int frameRate display:
+    fill(200);
+    text(int(frameRate),20,60);
 
 }
 
@@ -257,8 +281,6 @@ void keyPressed() {
         particles = new ArrayList<Particle>();
     } else if (key == '.') {
         second_viz = (!second_viz) ? true : false;
-    } else if (key == ' ') {
-        helper = (!helper) ? true : false;
     } else if (key == '1') {
         draw_boundary = (!draw_boundary) ? true : false;
     } else if (key == 'q') {
