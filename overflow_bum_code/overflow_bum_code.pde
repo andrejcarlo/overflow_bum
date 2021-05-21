@@ -1,3 +1,5 @@
+import processing.sound.*;
+
 ArrayList<Particle> particles = new ArrayList<Particle>(); // particles following paths
 Path[] paths = new Path[0]; // paths to be followed by particles
 Boundary metro_boundary = new Boundary(); // POLYGON BOUNDARY
@@ -5,6 +7,9 @@ Boundary metro_boundary_collide = new Boundary();
 Boundary[] metro_boundary_inside = new Boundary[0]; // POLYGON BOUNDARIES INSIDE
 Boundary[] metro_boundary_pilons = new Boundary[0]; // POLYGON BOUNDARIES INSIDE PILONS
 
+
+// add soundfile
+SoundFile sfile;
 
 // sliders and canvas object
 Slider congestionSlider, cohesionSlider, separationSlider, speedSlider;;
@@ -173,6 +178,11 @@ void setup() {
     image(img_wlines, 0, 0, width, height);
     background(0, 0, 0);
     
+    
+    // add sound on loop
+    sfile = new SoundFile(this, "assets/sound/background_noise.mpeg");
+    sfile.amp(0);
+    sfile.loop();
 }
 
 // Animate Function
@@ -218,6 +228,9 @@ void draw() {
         car.pathToFollow = path;
         particles.add(car);
     }
+    
+    // --- Adjust sound based on particle number
+    sfile.amp(map(congestionSlider.current_value, 0, congestionSlider.maximum, 0.0, 1.0));
 
     boolean inside_sec = false;
     boolean inside_main = false;
