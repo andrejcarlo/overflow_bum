@@ -196,7 +196,7 @@ void setup() {
     // ------ Slider Setup
     congestionSlider = new Slider(0, maxNumOfParticles, 0, 20, width - 280, 38.5, 230, 8, "CONGESTION", width-310, 47.5);
     cohesionSlider = new Slider(0, 1.0, 0, 0.1, width - 280, 74.5, 230, 8, "COHESION", width-310, 84.5);
-    separationSlider = new Slider(0, 1.1, 0, 0.073, width - 280, 109.5, 230, 8, "SEPARATION", width-310, 119.5);
+    separationSlider = new Slider(0, 1.1, 0, 0.073, width - 280, 109.5, 230, 8, "SPREAD", width-310, 119.5);
     speedSlider = new Slider(0.1, 2, 1, 0.13, width - 280, 146.5, 230, 8, "SPEED", width-310, 154.5);
     
     //String[] fontList = PFont.list();
@@ -355,10 +355,8 @@ void keyPressed(){
         separationSlider.decrease_slider();
     }  else if (key == '3') {
         speedSlider.increase_slider();
-        println(speedSlider.current_value);
     } else if (key == '2') {
         speedSlider.decrease_slider();
-        println(speedSlider.current_value);
     }
     //println("pressed");
 }
