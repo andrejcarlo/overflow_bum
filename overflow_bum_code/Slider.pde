@@ -11,7 +11,7 @@ class Slider {
     color c = color(random(180, 330), random(30, 100), 100);
     
     float x_text, y_text;
-    float text_size = 25;
+    float text_size = 15;
     String text_str;
     
     Slider () {
@@ -44,31 +44,36 @@ class Slider {
     void increase_slider() {
       if (current_value + step <= maximum) {
         current_value += step;
+      }else {
+         current_value = maximum; 
       }
     }
     
     void decrease_slider() {
       if (current_value - step >= minimum) {
         current_value -= step;
+      } else {
+       current_value = minimum; 
       }
-    }
+    }  
     
     void display() {
-      textSize(text_size);
+      textFont(custom_font_subtitle,text_size);
+      textAlign(RIGHT);
       strokeWeight(0);
       fill(100);
       text(text_str, x_text,y_text);
       
-      strokeWeight(4);
-      noFill();
-      stroke(50);
+      strokeWeight(0.5);
+      fill(100);
+      //stroke(255);
       rect(x_start,y_start,width_slider,height_slider);
       
       float display_value = map(current_value, minimum, maximum, 0, width_slider);
       
       //stroke(50);
       //fill(191, 161, 130);
-      fill(c);
+      fill(255);
       rect(x_start ,y_start, display_value,height_slider);
       
       

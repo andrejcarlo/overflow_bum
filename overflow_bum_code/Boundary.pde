@@ -26,8 +26,8 @@ class Boundary {
 
     // Draw the path
     void display() {
-        strokeWeight(2);
-        stroke(50);
+        strokeWeight(1);
+        stroke(100);
         // Draw Metro Boundary
         beginShape();
         //print(metro_boundary[1]);

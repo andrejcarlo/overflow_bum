@@ -6,7 +6,7 @@ Boundary metro_boundary = new Boundary(); // POLYGON BOUNDARY
 Boundary metro_boundary_collide = new Boundary();
 Boundary[] metro_boundary_inside = new Boundary[0]; // POLYGON BOUNDARIES INSIDE
 Boundary[] metro_boundary_pilons = new Boundary[0]; // POLYGON BOUNDARIES INSIDE PILONS
-
+PVector[] icon = new PVector[0];
 
 // add soundfile
 SoundFile sfile;
@@ -21,6 +21,7 @@ JSONObject boundaries_collide_json;
 JSONObject paths_json;
 JSONObject inside_boundaries_json;
 JSONObject inside_boundaries_pilons_json;
+JSONObject icon_json;
 
 // Helpers From Keyboard or Buttons
 boolean draw_boundary = true;
@@ -34,6 +35,21 @@ int text_size_helper = 14;
 int text_size_time = 36;
 PFont custom_font_title;
 PFont custom_font_subtitle;
+PFont acumin_font;
+
+
+// Key Hack for P3d Button Presses
+boolean reset_particles = false;
+boolean activate_viz = false;
+boolean enable_boundary = false;  
+boolean congestion_increase = false;
+boolean congestion_decrease = false;
+boolean cohesion_increase = false;
+boolean cohesion_decrease= false;
+boolean separation_increase = false;
+boolean separation_decrease = false;
+boolean speed_increase = false;
+boolean speed_decrease = false;
 
 // Load JSON objects by reading the files
 void preload() {
@@ -44,11 +60,12 @@ void preload() {
     inside_boundaries_json = loadJSONObject("assets/data_from_rhino_bum/rotated/boundary_inside_catacombs.json");
     inside_boundaries_pilons_json = loadJSONObject("assets/data_from_rhino_bum/rotated/boundary_inside_pilons.json");
     paths_json = loadJSONObject("assets/data_from_rhino_bum/rotated/paths.json");
+    icon_json = loadJSONObject("assets/data_from_rhino_bum/rotated/icon.json");
 }
 
 // Convert saved point data (JSON) into p5 polygon Objects
 void loadData() {
-    int scale_offset = 150;
+    int scale_offset = 85;
     float original_size_x =2427.075;  //2311.76; 
     float original_size_y =1344.240; //1570.776;
     float ratio_boundary = original_size_x/original_size_y;
@@ -60,6 +77,7 @@ void loadData() {
     float mid_y = scaled_y/2;
     JSONArray boundariesData = boundaries_json.getJSONArray("0");
     JSONArray boundariesDataCollision = boundaries_collide_json.getJSONArray("0");
+    JSONArray iconData = icon_json.getJSONArray("0");
     
     JSONObject point;
     JSONArray paths_vertices;
@@ -67,8 +85,20 @@ void loadData() {
     Boundary new_boundary;
     float mapped_correct_size_y;
     float mapped_correct_size_x;
-   
-
+    
+    // Load Polygon DIsplay Boundaries
+    for (int i = 0; i < iconData.size(); i++) {
+        // Get each object in the array
+        point = iconData.getJSONObject(i);
+        // Get x,y from position
+        mapped_correct_size_y = map(point.getFloat("Y"), 0, original_size_y,  0, scaled_y) + height/2 - mid_y ;
+        mapped_correct_size_x = map(point.getFloat("X"), 0, original_size_x, 0, scaled_x) + width/2 - mid_x;
+         
+        //balls = (Ball[]) append(balls, b);
+        icon = (PVector[]) append(icon, new PVector(mapped_correct_size_x, mapped_correct_size_y));
+       
+    }
+    
     // Load Polygon DIsplay Boundaries
     for (int i = 0; i < boundariesData.size(); i++) {
         // Get each object in the array
@@ -158,30 +188,27 @@ void setup() {
     loadData();
     
     print("Made with love in Delft/Bucharest by @andrejcarlo and @alxmuller");
-    print("VERSION BUM_01");
+    print("VERSION BUM_100");
     
-    //size(1600, 1000);
-    fullScreen(P3D);
+    size(1280, 720, P3D);
+    //fullScreen(P3D);
     
     // ------ Slider Setup
-    congestionSlider = new Slider(0, maxNumOfParticles, 0, 5, width - 250, 25, 230, 20, "Congestion", width-425, 45);
-    cohesionSlider = new Slider(0, 1, 0, 0.1, width - 250, 70, 230, 20, "Cohesion", width-425, 90);
-    separationSlider = new Slider(0, 1.1, 0, 0.05, width - 250, 115, 230, 20, "Separation", width-425, 135);
-    speedSlider = new Slider(0.1, 2, 1, 0.1, width - 250, 160, 230, 20, "Speed", width-425, 180);
+    congestionSlider = new Slider(0, maxNumOfParticles, 0, 20, width - 280, 38.5, 230, 8, "CONGESTION", width-310, 47.5);
+    cohesionSlider = new Slider(0, 1.0, 0, 0.1, width - 280, 74.5, 230, 8, "COHESION", width-310, 84.5);
+    separationSlider = new Slider(0, 1.1, 0, 0.073, width - 280, 109.5, 230, 8, "SEPARATION", width-310, 119.5);
+    speedSlider = new Slider(0.1, 2, 1, 0.13, width - 280, 146.5, 230, 8, "SPEED", width-310, 154.5);
     
     //String[] fontList = PFont.list();
     //printArray(fontList);
-  
-    custom_font_title = createFont("Futura PT Bold", 70);
-    custom_font_subtitle = createFont("Futura PT Bold", 40);
-    
-    image(img_wlines, 0, 0, width, height);
-    background(0, 0, 0);
+    acumin_font = loadFont("Montserrat-Black-48.vlw");
+    custom_font_title = loadFont("Swiss721BT-BlackExtended-48.vlw");
+    custom_font_subtitle = loadFont("Swiss721BT-BoldExtended-48.vlw");
     
     
     // add sound on loop
-    sfile = new SoundFile(this, "assets/sound/background_noise.mpeg");
-    sfile.amp(0);
+    sfile = new SoundFile(this, "assets/sound/ambience_aif.aif");
+    sfile.amp(0.01);
     sfile.loop();
 }
 
@@ -196,7 +223,7 @@ void draw() {
         background(0);
 
         fill(0, 2);
-        stroke(51);
+        //stroke(51);
     }
     rect(0, 0, width, height);
     //fill(0, 0, 0, 15);
@@ -209,8 +236,10 @@ void draw() {
       for (Boundary inside: metro_boundary_inside) {
         inside.display();
       }
+      displayIcon();
     }
     
+   
     // Draw Sliders
     congestionSlider.display();
     cohesionSlider.display();
@@ -230,7 +259,7 @@ void draw() {
     }
     
     // --- Adjust sound based on particle number
-    sfile.amp(map(congestionSlider.current_value, 0, congestionSlider.maximum, 0.0, 1.0));
+    sfile.amp(map(congestionSlider.current_value, 0.01, congestionSlider.maximum, 0.01, 1.0));
 
     boolean inside_sec = false;
     boolean inside_main = false;
@@ -269,35 +298,49 @@ void draw() {
 
     
     // Draw Title and Subtitle
+    textAlign(LEFT);
     strokeWeight(0);
     fill(100);
-    textFont(custom_font_title);
-    text("Overflow", 20, height-100);
+    textFont(custom_font_title,41);
+    text("OVERFLOW", 40, height-65);
     
-    textFont(custom_font_subtitle);
-    text("The city and its places", 20, height-50);
+    textFont(custom_font_subtitle,20);
+    text("The city and its places", 48, height-40);
     
     
-    textFont(custom_font_title,36);
-    // white float frameRate
-    fill(255);
-    text(frameRate,20,20);
+    textFont(acumin_font,36);
     // gray int frameRate display:
     fill(200);
     text(int(frameRate),20,60);
+    
+    
+    //keyActions();
 
 }
 
-// Buttons for Helpers
-void keyPressed() {
-    if (key == '0') {
+
+void displayIcon() {
+    //strokeWeight(2);
+    fill(100);
+    noStroke();
+    // Draw Metro Boundary
+    beginShape();
+    //print(metro_boundary[1]);
+    for (PVector v : icon) {
+        vertex(v.x, v.y);
+    }
+    endShape(CLOSE);
+}
+
+
+
+void keyPressed(){ 
+  if (key == '0') {
         particles = new ArrayList<Particle>();
     } else if (key == '.') {
         second_viz = (!second_viz) ? true : false;
     } else if (key == '1') {
         draw_boundary = (!draw_boundary) ? true : false;
-    } else if (key == 'q') {
-        draw_metro_lines = (!draw_metro_lines) ? true : false;
     } else if (key == '*') {
         congestionSlider.increase_slider();
     } else if (key == '/') {
@@ -312,7 +355,14 @@ void keyPressed() {
         separationSlider.decrease_slider();
     }  else if (key == '3') {
         speedSlider.increase_slider();
+        println(speedSlider.current_value);
     } else if (key == '2') {
         speedSlider.decrease_slider();
+        println(speedSlider.current_value);
     }
+    //println("pressed");
 }
+
+//void keyTyped() {
+//   println("typed"); 
+//}
