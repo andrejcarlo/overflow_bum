@@ -187,11 +187,11 @@ void setup() {
     preload();
     loadData();
     
-    print("Made with love in Delft/Bucharest by @andrejcarlo and @alxmuller");
-    print("VERSION BUM_100");
+    println("Made with love in Delft/Bucharest by @andrejcarlo and @alxmuller");
+    println("VERSION BUM_100");
     
-    size(1280, 720, P3D);
-    //fullScreen(P3D);
+    //size(1280, 720, P3D);
+    fullScreen(P3D);
     
     // ------ Slider Setup
     congestionSlider = new Slider(0, maxNumOfParticles, 0, 20, width - 280, 38.5, 230, 8, "CONGESTION", width-310, 47.5);
@@ -308,10 +308,10 @@ void draw() {
     text("The city and its places", 48, height-40);
     
     
-    textFont(acumin_font,36);
-    // gray int frameRate display:
-    fill(200);
-    text(int(frameRate),20,60);
+    //textFont(acumin_font,36);
+    //// gray int frameRate display:
+    //fill(200);
+    //text(int(frameRate),20,60);
     
     
     //keyActions();
